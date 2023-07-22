@@ -12,7 +12,7 @@ struct node{
 	node *next;
 };
 
-extern bool is_null(node *task_node);
+extern bool is_null_node(node *task_node);
 extern node *create_node(char *task, int importance, int urgency);
 extern void print_node(node *task_node);
 extern void free_node(node *task_node);

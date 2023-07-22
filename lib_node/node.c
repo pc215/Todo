@@ -7,7 +7,7 @@
 #include "node.h"
 
 // Return true if node is NULL
-bool is_null(node *task_node) { 
+bool is_null_node(node *task_node) { 
 	return task_node == NULL;
 }
 
