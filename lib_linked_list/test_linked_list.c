@@ -38,6 +38,6 @@ int main(void) {
   insert_node(list, &n4, &node_comparator);
   printf("After inserting t4: \n");
   print_linked_list(list);
-    
+  free_linked_list(list);
   return 0;
 }
