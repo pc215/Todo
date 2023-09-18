@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <limits.h>
+
+#include "todo.h"
   
 
 static void prepend_string(char *prefix, char *original) {
@@ -48,8 +50,37 @@ static void find_dir(char *dir, char *start_dir, char (*found_dir)[PATH_MAX]) {
   }
 }
 
-int main( int argc, char **argv) {
+// Function to print the argp_state contents
+// static void print_argp_state(const struct argp_state *state) {
+//     printf("argc: %d\n", state->argc);
+//     printf("argv:\n");
+//     for (int i = 0; i < state->argc; i++) {
+//         printf("  argv[%d]: \"%s\"\n", i, state->argv[i]);
+//     }
+//     printf("next: %d\n", state->next);
+//     printf("input: %p\n", state->input);
+//     printf("root_argp: %p\n", (void *)state->root_argp);
+//     printf("name: \"%s\"\n", state->name);
+// }
 
+static error_t parse_opt_add (int key, char *arg, struct argp_state *state) {
+  switch (key) {
+    case 'i': printf ("Have reached i\n"); break;
+    case 'u': printf ("Have reached u\n"); break;
+  }
+  return 0;
+}
+
+static error_t parse_opt_del (int key, char *arg, struct argp_state *state) {
+  switch (key) {
+    case 'r': printf ("Have reached r\n"); break;
+    case 'c': printf ("Have reached c\n"); break;
+  }
+  return 0;
+}
+
+
+static error_t todo_init() {
   // pwd will be required so calculate each time any todo command is called.
   char cwd[PATH_MAX];
   if (getcwd(cwd, PATH_MAX) == NULL) {
@@ -95,6 +126,48 @@ int main( int argc, char **argv) {
     fprintf(stderr, "Could not create %s file!\n", head_file);
     return EXIT_FAILURE;
   }
+  return EXIT_SUCCESS;
+}
 
+static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+  switch (key) {
+    case ARGP_KEY_ARG: {
+      // To stop parsing at the current argument
+      int argc = state->argc;
+      state->argc = 2;
+
+      if (!strcmp(arg, INIT_COMMAND)) {
+         return todo_init();
+      } else if (!strcmp(arg, ADD_COMMAND)) {
+        struct argp argp_add = {add_options, parse_opt_add};
+        argp_parse(&argp_add, argc-1, state->argv+1, 0, 0, 0);
+      } else if (!strcmp(arg, DEL_COMMAND)) {
+        struct argp argp_del = {del_options, parse_opt_del};
+        argp_parse(&argp_del, argc - 1, state->argv + 1, 0, 0, 0);
+      } else if (!strcmp(arg, DROP_COMMAND)) {
+
+      } else {
+        fprintf(stderr, "Invalid Command!\n");
+      }
+      break;
+    }
+    case ARGP_ERR_UNKNOWN: {
+      // TODO
+      fprintf(stderr, "Invalid Command!\n");
+      return EXIT_FAILURE;
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
+int main( int argc, char **argv) {
+
+  if (argc == 1) {
+    // Print todo list
+    printf("Print todo list!\n");
+  } else {
+    struct argp argp_opt = {NULL, parse_opt};
+    argp_parse(&argp_opt, argc, argv, ARGP_IN_ORDER, NULL, NULL);
+  }
 	return EXIT_SUCCESS;
 }
