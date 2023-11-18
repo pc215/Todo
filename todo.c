@@ -8,6 +8,7 @@
 
 #include "todo.h"
   
+typedef error_t (*parse_opt_func)(int, char *, struct argp_state *);
 
 static void prepend_string(char *prefix, char *original) {
   int prefix_len = strlen(prefix);
@@ -51,19 +52,38 @@ static void find_dir(char *dir, char *start_dir, char (*found_dir)[PATH_MAX]) {
 }
 
 // Function to print the argp_state contents
-// static void print_argp_state(const struct argp_state *state) {
-//     printf("argc: %d\n", state->argc);
-//     printf("argv:\n");
-//     for (int i = 0; i < state->argc; i++) {
-//         printf("  argv[%d]: \"%s\"\n", i, state->argv[i]);
-//     }
-//     printf("next: %d\n", state->next);
-//     printf("input: %p\n", state->input);
-//     printf("root_argp: %p\n", (void *)state->root_argp);
-//     printf("name: \"%s\"\n", state->name);
-// }
+static void print_argp_state(const struct argp_state *state) {
+    printf("argc: %d\n", state->argc);
+    printf("argv:\n");
+    for (int i = 0; i < state->argc; i++) {
+        printf("  argv[%d]: \"%s\"\n", i, state->argv[i]);
+    }
+    printf("next: %d\n", state->next);
+    printf("input: %p\n", state->input);
+    printf("root_argp: %p\n", (void *)state->root_argp);
+    printf("name: \"%s\"\n", state->name);
+}
+
+struct argp_option add_options[] = {
+  {"importance", 'i', "INT", OPTION_ARG_OPTIONAL, 
+   "Importance level (between 0 and 9, both inclusive)", OPT_ADD},
+  {"urgency", 'u', "INT", OPTION_ARG_OPTIONAL,
+   "Urgency level (between 0 and 9, both inclusive)", OPT_ADD},
+  {0}
+};  
+
+// Need a separate flag to ensure mutual exclusivity
+struct argp_option del_options[] = {
+  {"remove", 'r', "INT", OPTION_ARG_OPTIONAL, 
+   "Removes a task from the todo-list (top by default)", OPT_DEL},
+  {"complete", 'c', "INT", OPTION_ARG_OPTIONAL, 
+   "Completes a task from the todo-list (top by default)", OPT_DEL},
+  {0}
+};
+
 
 static error_t parse_opt_add (int key, char *arg, struct argp_state *state) {
+  print_argp_state(state);
   switch (key) {
     case 'i': printf ("Have reached i\n"); break;
     case 'u': printf ("Have reached u\n"); break;
@@ -79,8 +99,7 @@ static error_t parse_opt_del (int key, char *arg, struct argp_state *state) {
   return 0;
 }
 
-
-static error_t todo_init() {
+static error_t todo_init(void) {
   // pwd will be required so calculate each time any todo command is called.
   char cwd[PATH_MAX];
   if (getcwd(cwd, PATH_MAX) == NULL) {
@@ -129,7 +148,14 @@ static error_t todo_init() {
   return EXIT_SUCCESS;
 }
 
-static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+static void 
+parse_more_opts(struct argp_option *opts, parse_opt_func parse_opts, 
+                int argc, char **argv) {
+  struct argp argp = {opts, parse_opts};
+  argp_parse(&argp, argc - 1, argv + 1, 0, 0, 0);
+}
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   switch (key) {
     case ARGP_KEY_ARG: {
       // To stop parsing at the current argument
@@ -137,15 +163,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
       state->argc = 2;
 
       if (!strcmp(arg, INIT_COMMAND)) {
-         return todo_init();
+        todo_init();
       } else if (!strcmp(arg, ADD_COMMAND)) {
-        struct argp argp_add = {add_options, parse_opt_add};
-        argp_parse(&argp_add, argc-1, state->argv+1, 0, 0, 0);
+        parse_more_opts(add_options, parse_opt_add, argc, state->argv);
       } else if (!strcmp(arg, DEL_COMMAND)) {
-        struct argp argp_del = {del_options, parse_opt_del};
-        argp_parse(&argp_del, argc - 1, state->argv + 1, 0, 0, 0);
+        parse_more_opts(del_options, parse_opt_del, argc, state->argv);
       } else if (!strcmp(arg, DROP_COMMAND)) {
-
+        // Delete the directory with a message
       } else {
         fprintf(stderr, "Invalid Command!\n");
       }

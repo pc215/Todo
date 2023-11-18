@@ -6,10 +6,10 @@
 typedef struct node node;
 
 struct node{
-	char *task;
 	int importance;
 	int urgency;
 	node *next;
+	char *task;
 };
 
 extern bool is_null_node(node *task_node);

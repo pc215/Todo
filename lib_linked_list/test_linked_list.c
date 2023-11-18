@@ -35,6 +35,7 @@ int main(void) {
   insert_node(list, &n3, &node_comparator);
   printf("After inserting t3: \n");
   print_linked_list(list);
+  remove_node(list, 2);
   insert_node(list, &n4, &node_comparator);
   printf("After inserting t4: \n");
   print_linked_list(list);

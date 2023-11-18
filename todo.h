@@ -39,20 +39,4 @@ struct del_arguments {
   bool complete;
 };
 
-struct argp_option add_options[] = {
-  {"importance", 'i', "INT", OPTION_ARG_OPTIONAL, 
-   "Importance level (between 0 and 9, both inclusive)", OPT_ADD},
-  {"urgency", 'u', "INT", OPTION_ARG_OPTIONAL,
-   "Urgency level (between 0 and 9, both inclusive)", OPT_ADD},
-  {0}
-};  
-
-// Need a separate flag to ensure mutual exclusivity
-struct argp_option del_options[] = {
-  {"remove", 'r', "INT", OPTION_ARG_OPTIONAL, 
-   "Removes a task from the todo-list (top by default)", OPT_DEL},
-  {"complete", 'c', "INT", OPTION_ARG_OPTIONAL, 
-   "Completes a task from the todo-list (top by default)", OPT_DEL},
-  {0}
-};
 

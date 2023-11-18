@@ -11,7 +11,7 @@ BUILD = libnode test_linked_list $(LIB)
 all: $(BUILD)
 
 libnode: 
-	cd ../lib_node; make libnode.a
+	make -C ../lib_node/ libnode.a
 
 liblinkedlist.a: $(LIBOBJS)
 	ar rcs $(LIB) $(LIBOBJS)
@@ -22,5 +22,5 @@ test_linked_list: test_linked_list.c linked_list.o
 
 clean:
 	$(RM) $(BUILD) *.o core
-	cd ../lib_node/; make clean;
+	make -C ../lib_node/ clean;
 	
