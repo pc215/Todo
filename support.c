@@ -7,6 +7,8 @@
 
 #define ASCII_HASH_SIZE (2 * SHA256_DIGEST_LENGTH)
 #define LENGTH_OF_DIR_NAME (2)
+/* Number of paramaters for the comparator (imp and urg here) */
+#define NUM_OF_PARAMS (2)
 #define MAX_TASK_SIZE (512)
 
 /* Sets hash_str to the ascii representation of the hash 
@@ -106,12 +108,42 @@ void serialise_task_node(node *task_node, char *tasks_dir) {
     exit(-1);
   }
 
-  get_task(hash_curr, tasks_dir);
+  print_task_node(hash_curr, tasks_dir);
+}
+
+/* Returns the urgency, read from the file */
+static const int 
+get_imp(FILE *fp) {
+  fseek(fp, 0, SEEK_SET);
+  return fgetc(fp) - '0';
+}
+
+/* Returns the importance, read from the file */
+static const int 
+get_urg(FILE *fp) {
+  fseek(fp, sizeof(char), SEEK_SET);
+  return fgetc(fp) - '0';
+}
+
+/* The string passed in should have at least enough space to accommodate
+ * an ASCII hash string */
+static void
+get_hash(FILE *fp, char *hash) {
+  fseek(fp, NUM_OF_PARAMS * sizeof(char), SEEK_SET);
+  fgets(hash, ASCII_HASH_SIZE + 1, fp);
+}
+
+/* The string passed in should have at least enough space to accommodate
+ * an MAX_TASK_SIZE task string */
+static void
+get_task(FILE *fp, char *task) {
+  fseek(fp, NUM_OF_PARAMS * sizeof(char) + ASCII_HASH_SIZE, SEEK_SET);
+  fgets(task, MAX_TASK_SIZE, fp);
 }
 
 /* Retrieve the task from the file stored in the tasks directory 
  * for a certain task node */
-void get_task(char *hash, char *tasks_dir) {
+void print_task_node(char *hash, char *tasks_dir) {
   char hash_null[ASCII_HASH_SIZE];
   get_node_hash(NULL, hash_null);
   if (strcmp(hash, hash_null) == 0) {
@@ -129,27 +161,19 @@ void get_task(char *hash, char *tasks_dir) {
     return;
   }
 
-  char imp_c;
-  fread(&imp_c, sizeof(char), 1, fp);
-  int imp = atoi(&imp_c);
-  printf("Imp: %d\n", imp);
-
-  char urg_c;
-  fread(&urg_c, sizeof(char), 1, fp);
-  int urg = atoi(&urg_c);
-  printf("Urg: %d\n", urg);
-
   char hash_next[ASCII_HASH_SIZE + 1];
-  fgets(hash_next, ASCII_HASH_SIZE + 1, fp);
+  get_hash(fp, hash_next);
   printf("Next hash:%s\n", hash_next);
 
-  // fseek(fp, ASCII_HASH_SIZE, SEEK_CUR);
-  
+  printf("Imp:%d\n", get_imp(fp));
+
+  printf("Urg:%d\n", get_urg(fp));
+
   char task[MAX_TASK_SIZE];
-  fgets(task, MAX_TASK_SIZE, fp);
+  get_task(fp, task);
   printf("Task:%s\n", task);
 
-  get_task(hash_next, tasks_dir);
+  print_task_node(hash_next, tasks_dir);
 }
 
 // void deserialise_task(char *file_name, node *task_node) {
