@@ -5,153 +5,151 @@
 
 #include "linked_list.h"
 
-// Create a linked list
-linked_list *create_linked_list( void ) {
-	return calloc(sizeof(node *), 1);
+#define HEAD_POSITON 0
+
+/* Create a linked list */
+linked_list create_linked_list(void) {
+	return calloc(1, sizeof(node *));
 }
 
-// Returns true if the head is NULL
-bool is_empty_list(linked_list *list) {
-	return is_null_node(*list);
+/* Returns true if the list has been created */
+static bool 
+list_exists(linked_list list) {
+	return list != NULL;
 }
 
-bool is_null_list(linked_list *list) {
-  return list==NULL;
+/* Returns true if the head is NULL */
+static bool 
+is_empty_list(linked_list list) {
+  assert(list_exists(list));
+  return is_null_node(*list);
 }
 
-// Checks if the next node exists
-bool has_next(node *current) {
-	return !is_null_node(current) ? is_null_node(current->next) : false;
+/* Returns the next node in the linked list */
+static node *
+get_next(node *cur) {
+  /* Returns NULL if the current node is NULL */ 
+	return !is_null_node(cur) ? cur->next : NULL;
 }
 
-// Returns NULL if the current node is NULL 
-node *get_next(node *current) {
-	return !is_null_node(current) ? current->next : NULL;
+/* Set next node of a given node */
+static bool 
+set_next(node *cur, node *next) {
+  if (is_null_node(cur)) {
+    return false;
+  }
+
+  cur->next = next;
+  return true;
 }
 
-// Set next node of a given node
-bool set_next(node *current, node *next) {
-	if (!is_null_node(current)) {
-		current->next = next;
-		return true;
+/* Returns a certain node at a given position */
+node *
+get_node(linked_list list, int pos) {
+	assert(list_exists(list) && !is_empty_list(list));
+
+	node *cur = *list;
+	while ((pos--) && !is_null_node(cur)) {
+		cur= get_next(cur);
 	}
-	return false;
-}
 
-// Find a certain node at a given position
-node *find_node(linked_list *list, int position) {
-	assert(!is_null_list(list) && !is_empty_list(list));
-	node *current = *list;
-	while ( (position--) && !is_null_node(current) ) {
-		current = get_next(current);
-	}
-	// If NULL then gives an appropriate message
-	return current;
+	return cur;
 }
 
 
-// Remove a node at a given position
-bool remove_node(linked_list *list, int position) {
-	// The head
-	
-	assert(!is_null_list(list));
-	node *current = *list;
+/* Remove a node at a given position */
+bool 
+remove_node(linked_list list, int pos) {
+	assert(list_exists(list));
+  if (pos < HEAD_POSITON) {
+    return false;
+  }
+
+ 	/* The head */
+  if (pos == HEAD_POSITON) {
+    node *cur = *list;
+    *list = get_next(cur);
+    free_node(cur);
+    return true;
+  }
+
+  /* The previous node must exist unless position is out of bounds */
+  node *prev = get_node(list, pos - 1);
+  node *cur  = get_next(prev);
+
+  if (!is_null_node(cur)) {
+    set_next(prev, get_next(cur));
+    free_node(cur);
+    return true;
+  }
+
+  return false;
+}
+
+bool 
+insert_node(linked_list list, node *task_node, comparator node_compare) {
+	assert(list_exists(list));
+  /* NULL must be the maximum element */
+  assert(node_compare(task_node, NULL) > 0);
+
+  /* Invalid input but don't exit program */
+  if (task_node == NULL) {
+    return false;
+  }
+
+  /* Set the head node */
+  if (is_empty_list(list)) {
+    *list = task_node;
+    return true;
+  }
+
 	node *prev = NULL;
-	// Search for the node
-	
-	while ( (position--) && !is_null_node(current) ) {
-		prev = current;
-		current = get_next(current);
+  node *cur  = *list;
+	/* If equal, gets added after */ 
+	while (node_compare(task_node, cur) <= 0) {
+    /* Comparator must define comparison with NULL as well */
+    prev = cur;
+		cur = get_next(cur);
 	}
 
-	// Either current is NULL or value is found
-	if (is_null_node(current)) {
-		return false;
-	}
+  /* Previous can only be NULL when task_node is added to the head 
+   * This is due to the fact that NULL is the minimum element and 
+   * therefore when cur == NULL, the loop will break */
+  if (prev == NULL) {
+    set_next(task_node, *list);
+    *list = task_node;
+    return true;
+  }
 
-	// Remove the node
-	if (is_null_node(prev)) {
-		// remove head
-		*list = get_next(current);
-
-	} else if (!has_next(current)) {
-		// remove tail
-		set_next(prev, NULL);
-	} else {
-		// middle
-		set_next(prev, get_next(current));
-	}
-
-	free_node(current);
-
-	return true;
+  set_next(task_node, get_next(prev));
+  set_next(prev, task_node);
+  return true;
 }
 
-void insert_node(linked_list *list, node **task_node, comparator node_comparator) {
-	assert(!is_null_list(list));
-  assert(!is_null_node(*task_node));
-	// The head
-	node *current = *list;
-	node *prev = NULL;
-	// If equal, gets added before 
-	while (current != NULL && node_comparator(*task_node, current) <= 0) {
-		prev = current;
-		current = get_next(current);
-	}
-	// current == NULL || node_comparator(task_node, current) < value
-  // If node comes after with same priority, must be placed after
+/* Free the memory allocated for the linked list */
+void 
+free_linked_list(linked_list list) {
+  assert(list_exists(list));
 
-	if (current == NULL) {
-		if (prev == NULL) {
-			// Empty list
-			*list = *task_node;
-		} else {
-			// Add to tail
-			set_next(prev, *task_node); 
-		}
-	} else {
-    if (prev == NULL) {
-      // Add to head
-      *list = *task_node;
-      set_next(*task_node, current);
-    } else {
-      // Add to middle
-      set_next(prev, *task_node);
-      set_next(*task_node, current);
-    } 
-	}
+  node *cur = *list;
+  node *prev = NULL;
+  while (!is_null_node(cur)) {
+    prev = cur;
+    cur = get_next(cur);
+    free_node(prev);
+  }
+
+  free(list);
 }
 
-// Free the memory allocated for the linked list
-void free_linked_list(linked_list *list) {
-  if (!is_null_list(list)) {
-    if (!is_empty_list(list)) {
-      node *current = *list;
-      node *prev = NULL;
-      while (!is_null_node(current)) {
-        prev = current;
-        current = get_next(current);
-        free_node(prev);
-      }
-    }
-    // Freeing list
-    free(list);
+/* Print the contents of the linked list */
+void 
+print_linked_list(linked_list list) {
+  assert(list_exists(list));
+
+  node *cur = *list;
+  while (!is_null_node(cur)) {
+    print_node(cur);
+    cur = get_next(cur);
   }
 }
-
-
-void print_linked_list(linked_list *list) {
-	if (is_null_list(list)) {
-		printf("Linked list does not exist!\n");
-	} else {
-		node *current = *list;
-		while (!is_null_node(current)) {
-      print_node(current);
-			current = get_next(current);
-		}
-	}
-}
-
-
-// Linked lists
-linked_list todo_list;

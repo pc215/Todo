@@ -70,8 +70,8 @@ write_node_to_file(const char *file, node *task_node) {
     return false;
   }
 
-  fprintf(fp, "%d", task_node->importance);
-  fprintf(fp, "%d", task_node->urgency);
+  fprintf(fp, "%d", task_node->imp);
+  fprintf(fp, "%d", task_node->urg);
 
   /* Hashing the pointer to the next node */
   char hash_next[ASCII_HASH_SIZE];
@@ -83,67 +83,10 @@ write_node_to_file(const char *file, node *task_node) {
   return true;
 }
 
-/* The task node is hashed and its contents are represented 
- * appropriately in a file in the tasks directory */
-void serialise_task_node(node *task_node, char *tasks_dir) {
-  /* Hash the task_node */
-  char hash_curr[ASCII_HASH_SIZE];
-  get_node_hash(task_node, hash_curr);
-
-  /* Get the name of the directory */
-  const int dir_name_len = LENGTH_OF_DIR_NAME + strlen(tasks_dir);
-  char dir[dir_name_len];
-  get_dir_name(hash_curr, tasks_dir, dir);
-
-  /* Create the directory */
-  mkdir(dir, 0755);
-
-  /* Get the name of the file */ 
-  char file[ASCII_HASH_SIZE + dir_name_len];
-  get_file_name(hash_curr, tasks_dir, file);
-
-  /* Can also store the size of the text in the file */
-  if (!write_node_to_file(file, task_node)) {
-    // Force exit for now, think of more elegant approach later
-    exit(-1);
-  }
-
-  print_task_node(hash_curr, tasks_dir);
-}
-
-/* Returns the urgency, read from the file */
-static const int 
-get_imp(FILE *fp) {
-  fseek(fp, 0, SEEK_SET);
-  return fgetc(fp) - '0';
-}
-
-/* Returns the importance, read from the file */
-static const int 
-get_urg(FILE *fp) {
-  fseek(fp, sizeof(char), SEEK_SET);
-  return fgetc(fp) - '0';
-}
-
-/* The string passed in should have at least enough space to accommodate
- * an ASCII hash string */
-static void
-get_hash(FILE *fp, char *hash) {
-  fseek(fp, NUM_OF_PARAMS * sizeof(char), SEEK_SET);
-  fgets(hash, ASCII_HASH_SIZE + 1, fp);
-}
-
-/* The string passed in should have at least enough space to accommodate
- * an MAX_TASK_SIZE task string */
-static void
-get_task(FILE *fp, char *task) {
-  fseek(fp, NUM_OF_PARAMS * sizeof(char) + ASCII_HASH_SIZE, SEEK_SET);
-  fgets(task, MAX_TASK_SIZE, fp);
-}
-
 /* Retrieve the task from the file stored in the tasks directory 
  * for a certain task node */
-void print_task_node(char *hash, char *tasks_dir) {
+static void 
+print_task_node(char *hash, char *tasks_dir) {
   char hash_null[ASCII_HASH_SIZE];
   get_node_hash(NULL, hash_null);
   if (strcmp(hash, hash_null) == 0) {
@@ -176,14 +119,61 @@ void print_task_node(char *hash, char *tasks_dir) {
   print_task_node(hash_next, tasks_dir);
 }
 
-// void deserialise_task(char *file_name, node *task_node) {
-//   // Gets everything except node (has a different function for it)
-//   memcpy(fp, task_node->importance, sizeof(int));
-//   memcpy(fp + sizeof(int), task_node->urgency, sizeof(int));
-//   // hash the next node before writing
-//   memcpy(fp + 2 * sizeof(int), task_node->next, sizeof(node *));
-// }
-//
-// void deserialise_next(char *file_name, node *task_node) {
-//
-// }
+
+/* The task node is hashed and its contents are represented 
+ * appropriately in a file in the tasks directory */
+void serialise_task_node(node *task_node, char *tasks_dir) {
+  /* Hash the task_node */
+  char hash_curr[ASCII_HASH_SIZE];
+  get_node_hash(task_node, hash_curr);
+
+  /* Get the name of the directory */
+  const int dir_name_len = LENGTH_OF_DIR_NAME + strlen(tasks_dir);
+  char dir[dir_name_len];
+  get_dir_name(hash_curr, tasks_dir, dir);
+
+  /* Create the directory */
+  mkdir(dir, 0755);
+
+  /* Get the name of the file */ 
+  char file[ASCII_HASH_SIZE + dir_name_len];
+  get_file_name(hash_curr, tasks_dir, file);
+
+  /* Can also store the size of the text in the file */
+  if (!write_node_to_file(file, task_node)) {
+    // Force exit for now, think of more elegant approach later
+    exit(-1);
+  } 
+
+  print_task_node(hash_curr, tasks_dir);
+}
+
+/* Returns the urgency, read from the file */
+const int 
+get_imp(FILE *fp) {
+  fseek(fp, 0, SEEK_SET);
+  return fgetc(fp) - '0';
+}
+
+/* Returns the importance, read from the file */
+const int 
+get_urg(FILE *fp) {
+  fseek(fp, sizeof(char), SEEK_SET);
+  return fgetc(fp) - '0';
+}
+
+/* The string passed in should have at least enough space to accommodate
+ * an ASCII hash string */
+void
+get_hash(FILE *fp, char *hash) {
+  fseek(fp, NUM_OF_PARAMS * sizeof(char), SEEK_SET);
+  fgets(hash, ASCII_HASH_SIZE + 1, fp);
+}
+
+/* The string passed in should have at least enough space to accommodate
+ * an MAX_TASK_SIZE task string */
+void
+get_task(FILE *fp, char *task) {
+  fseek(fp, NUM_OF_PARAMS * sizeof(char) + ASCII_HASH_SIZE, SEEK_SET);
+  fgets(task, MAX_TASK_SIZE, fp);
+}

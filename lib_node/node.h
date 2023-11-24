@@ -1,19 +1,19 @@
-#include <stdbool.h>
-
 #ifndef NODE_H
 #define NODE_H
+
+#include <stdbool.h>
 
 typedef struct node node;
 
 struct node{
-	int importance;
-	int urgency;
+	int imp;
+	int urg;
 	node *next;
 	char *task;
 };
 
+extern node *create_node(int imp, int urg, char *task);
 extern bool is_null_node(node *task_node);
-extern node *create_node(char *task, int importance, int urgency);
 extern void print_node(node *task_node);
 extern void free_node(node *task_node);
 
